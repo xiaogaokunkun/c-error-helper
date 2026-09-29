@@ -16,6 +16,8 @@ test/e2e/**/*result*.json
 # 临时截图
 *.png
 *.gif
+!icon.png
+!docs/*.gif
 
 # 系统
 .DS_Store
