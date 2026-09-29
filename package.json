@@ -10,8 +10,36 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Education",
+    "Linters"
   ],
+  "keywords": [
+    "c",
+    "c++",
+    "error",
+    "报错翻译",
+    "中文报错",
+    "gcc",
+    "dev-c++",
+    "chinese",
+    "beginner",
+    "初学者",
+    "offline",
+    "intellisense"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaogaokunkun/c-error-helper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xiaogaokunkun/c-error-helper/issues"
+  },
+  "homepage": "https://github.com/xiaogaokunkun/c-error-helper#readme",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "main": "./out/extension.js",
   "activationEvents": [
     "onLanguage:c",
@@ -21,7 +49,7 @@
   "scripts": {
     "compile": "tsc -p .",
     "test": "node test/run-tests.js",
-    "package": "vsce package --allow-missing-repository"
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

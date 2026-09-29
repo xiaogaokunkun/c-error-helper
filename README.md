@@ -57,7 +57,9 @@ code --install-extension c-error-helper-0.1.0.vsix
 
 ## 演示
 
-（动图占位 · 待补）
+![故意漏掉一个分号 → 悬停波浪线出中文解释 → Ctrl+. 打开「学长解释」完整文档](https://raw.githubusercontent.com/xiaogaokunkun/c-error-helper/main/docs/demo.gif)
+
+动图里的三拍：① 第 4 行 `int a = 1` 末尾漏了分号 → ② 第 5 行报 `expected a ';'`，鼠标**悬停红波浪线**，弹出中文解释「上一行末尾漏了分号：真正少分号的是上面那一行」→ ③ 点左侧**灯泡**（或按 `Ctrl+.`）选「📖 学长解释：…」，右侧打开完整讲解文档。
 
 ## 为什么不直接问 ChatGPT
 

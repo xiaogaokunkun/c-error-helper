@@ -7,6 +7,8 @@ node_modules/**
 out/**/*.map
 .git/**
 .gitignore
+*.log
+*.vsix
 **/*.ts
 tsconfig.json
 package-lock.json
