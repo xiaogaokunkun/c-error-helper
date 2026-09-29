@@ -1,0 +1,7 @@
+{
+  "name": "ceh-e2e-driver",
+  "publisher": "local",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.85.0" },
+  "main": "./out/extension.js"
+}

@@ -1,0 +1,22 @@
+# 依赖与构建产物
+node_modules/
+/out/
+*.vsix
+*.log
+
+# 测试产物（日志 / 结果 json / 工作区样例）
+test/**/*.log
+test/**/*-result.json
+test/**/*result*.json
+test/**/hover-debug.json
+test/workspace/
+test/e2e/**/*.log
+test/e2e/**/*result*.json
+
+# 临时截图
+*.png
+*.gif
+
+# 系统
+.DS_Store
+Thumbs.db

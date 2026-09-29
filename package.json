@@ -1,0 +1,31 @@
+{
+  "name": "c-error-helper",
+  "displayName": "C语言报错翻译器",
+  "description": "把 C/C++ 编译报错翻译成中文解释：错在哪、为什么、怎么改、正确写法。纯本地离线，秒解析。",
+  "version": "0.1.0",
+  "publisher": "xiaogaokunkun",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:c",
+    "onLanguage:cpp"
+  ],
+  "contributes": {},
+  "scripts": {
+    "compile": "tsc -p .",
+    "test": "node test/run-tests.js",
+    "package": "vsce package --allow-missing-repository"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "typescript": "^5.4.5"
+  }
+}
