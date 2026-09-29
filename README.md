@@ -19,20 +19,25 @@
 - 🇨🇳 **中文人话**：`expected ';' before '}' token` → 「上一行末尾漏了分号，补个 `;`」
 - ⚡ **秒解析**：纯本地关键词匹配，毫秒级出结果
 - 🔒 **离线可用**：教室 / 图书馆没网也能用，代码不发往任何云端
-- 🎯 **新手陷阱库**：**36 条规则**，全角标点、整数除法、`&&`/`||` 混淆、`scanf` 漏 `&`、`for` 里分号写成逗号…… 每条都是真踩过的坑
+- 🎯 **新手陷阱库**：**36 条规则**，全角标点、整数除法、`if` 里把 `==` 写成 `=`、`scanf` 漏 `&`、`for` 里分号写成逗号…… 每条都是真踩过的坑
 - 🖱️ **不打断心流**：原生 hover + `Ctrl+.` 快速修复，不用切面板、不用碰鼠标
 
 ## 安装
 
-**方式一：VS Code 扩展市场**
+**方式一：手动装 .vsix（现在就能用，推荐）**
 
-扩展面板（`Ctrl+Shift+X`）搜 `C 语言报错翻译器` 或 `c-error-helper`，点安装。
+1. 下载：[`c-error-helper-0.1.0.vsix`](https://github.com/xiaogaokunkun/c-error-helper/releases/download/v0.1.0/c-error-helper-0.1.0.vsix)（Release 页：[v0.1.0](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.0)）
+2. VS Code 里 `Ctrl+Shift+P` → `Extensions: Install from VSIX...` → 选那个文件
 
-**方式二：手动装 .vsix**
+命令行等价写法：
 
 ```bash
 code --install-extension c-error-helper-0.1.0.vsix
 ```
+
+**方式二：VS Code 扩展市场**
+
+扩展面板（`Ctrl+Shift+X`）搜 `C 语言报错翻译器` 或 `c-error-helper`，点安装。（刚提交上架，若搜不到就用方式一。）
 
 ## 使用
 
@@ -77,12 +82,12 @@ code --install-extension c-error-helper-0.1.0.vsix
 |---|---|
 | 匹配逻辑单测（gcc 原文 + IntelliSense 变体） | 20 / 20 |
 | 扩展 host 冒烟（真 VS Code API：hover / Ctrl+. / 解释文档 / 反例不误报） | 14 / 14 |
-| 真机端到端（cpptools + MinGW64 gcc 跑漏分号的 .c） | 6 / 6 |
+| 真机端到端（cpptools + MinGW64 gcc + 工作区 compilerPath，必须命中 `expected a ';'` → 中文「上一行末尾漏了分号」） | 6 / 6 |
 | 规则与网页版逐条核对 | 36 条一致 |
 
 ## 规则库
 
-36 条编译报错 + 逻辑坑，摘自同名网页版《C语言报错翻译器》并补了 cpptools 的同义关键词（如 `expected a ';'` / `use of undeclared identifier`）。每条含：**错在哪、为什么错、怎么改、正确写法示例**。
+36 条编译报错 + 逻辑坑，摘自同名网页版《C语言报错翻译器》并补了 cpptools 的同义关键词（如 `expected a ';'` / `use of undeclared identifier`）。每条含：**错在哪、为什么错、怎么改**；其中 11 条另带「正确写法」对照示例（`code` 字段）。
 
 持续扩充中——你遇到、它没认出来的报错，欢迎提 issue 把原文贴上来，我加进规则库。
 
@@ -116,16 +121,18 @@ C beginners lose most of their time to unreadable error messages — English jar
 - **Human-language explanations**, not compiler-speak
 - **Instant**: pure local keyword matching, no network round-trip
 - **Fully offline**: no login, no API key, your code never leaves the machine
-- **36 hand-curated rules** covering the classic beginner traps (full-width punctuation, integer division, `&&` vs `||`, missing `&` in `scanf`, `;` vs `,` in `for`, …)
+- **36 hand-curated rules** covering the classic beginner traps (full-width punctuation, integer division, `=` instead of `==` in an `if`, missing `&` in `scanf`, `;` vs `,` in `for`, …)
 - **Native UX**: hover the red squiggle for the explanation, `Ctrl+.` for a 「学长解释」 quick fix
 
 ### Install
 
-From the VS Code Marketplace (search `c-error-helper`), or:
+Grab the VSIX from the [v0.1.0 release](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.0), then in VS Code run `Extensions: Install from VSIX...` — or:
 
 ```bash
 code --install-extension c-error-helper-0.1.0.vsix
 ```
+
+Also on the VS Code Marketplace (search `c-error-helper`) — just submitted.
 
 ### Usage
 

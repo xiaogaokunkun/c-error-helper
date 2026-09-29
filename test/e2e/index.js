@@ -28,6 +28,28 @@ async function run() {
 
   try {
     fs.mkdirSync(WORK, { recursive: true });
+    // 关键：给测试工作区配好编译器路径，否则 cpptools 只报 include 错、
+    // 报不出「漏分号」，测试就会走错路径还假装通过（踩过这个坑）。
+    const vsc = path.join(WORK, '.vscode');
+    fs.mkdirSync(vsc, { recursive: true });
+    fs.writeFileSync(
+      path.join(vsc, 'settings.json'),
+      JSON.stringify(
+        {
+          'C_Cpp.default.compilerPath': process.env.CEH_GCC || 'D:/dev/Dev-Cpp/MinGW64/bin/gcc.exe',
+          'C_Cpp.default.cStandard': 'c11',
+          'C_Cpp.default.intelliSenseMode': 'windows-gcc-x64',
+          'C_Cpp.default.includePath': [
+            'D:/dev/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include',
+            'D:/dev/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/10.3.0/include',
+            'D:/dev/Dev-Cpp/MinGW64/include',
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
     if (process.env.CEH_E2E_USE_EXISTING === '1') {
       const all = fs.readdirSync(WORK).filter((f) => f.toLowerCase().endsWith('.c'));
       const pick = all.find((f) => /报错|测试|bad|wrong/i.test(f)) || all[0];
@@ -60,10 +82,11 @@ async function run() {
       await sleep(1000);
       diags = vscode.languages.getDiagnostics(doc.uri);
     }
+    const msgs = (diags || []).map((d) => d.message);
     t(
-      '真实报错出现（C/C++ 扩展的英文诊断）',
-      !!diags && diags.length > 0,
-      (diags || []).map((d) => d.message).join(' | ').slice(0, 220)
+      "真实报错出现：cpptools 报出漏分号 (expected a ';')",
+      msgs.some((m) => /expected a ';'|expected ';'/.test(m)),
+      msgs.join(' | ').slice(0, 220)
     );
 
     // 逐个诊断试 hover，看有没有被翻成中文（先预热一次：cpptools 首帧解析慢，会让第一次请求超时返回空）
@@ -87,7 +110,7 @@ async function run() {
           d.range.start.line + ':' + d.range.start.character + '-' + d.range.end.line + ':' + d.range.end.character,
         hover: text ? text.slice(0, 200).replace(/\n/g, ' / ') : '(空)',
       });
-      if (text && /怎么改|漏了分号|没声明|括号|头文件/.test(text)) {
+      if (text && /上一行末尾漏了分号/.test(text)) {
         hit = text;
         hitMsg = d.message;
         break;
@@ -95,9 +118,9 @@ async function run() {
     }
     fs.writeFileSync(path.join(path.dirname(OUT), 'hover-debug.json'), JSON.stringify(dbg, null, 2), 'utf8');
     t(
-      '英文报错的 hover 被翻成中文解释',
+      '真机漏分号报错被 hover 成中文（必须命中「上一行末尾漏了分号」，走 include 错不算）',
       hit.length > 0,
-      hit ? '【' + hitMsg.slice(0, 60) + '】→ ' + hit.slice(0, 160).replace(/\n/g, ' / ') : '没有任何诊断命中规则'
+      hit ? '【' + hitMsg.slice(0, 60) + '】→ ' + hit.slice(0, 160).replace(/\n/g, ' / ') : '没有任何诊断命中该规则'
     );
 
     // 顺带：Ctrl+. 灯泡在这份真实文件里也应有「学长解释」
