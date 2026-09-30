@@ -4,6 +4,8 @@
 
 **学长视角，不是教授视角** —— 它不告诉你「语法错误」，它告诉你「上一行末尾是不是忘了加分号 `;`」。
 
+[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/xiaogaokunkun.c-error-helper)](https://marketplace.visualstudio.com/items?itemName=xiaogaokunkun.c-error-helper)
+
 > ⭐ 觉得有用就给个 Star，让更多学 C 的同学看到。
 
 [English](#english)
@@ -24,7 +26,19 @@
 
 ## 安装
 
-**方式一：手动装 .vsix（现在就能用，推荐）**
+**方式一：VS Code 扩展市场（推荐）**
+
+扩展面板（`Ctrl+Shift+X`）搜 `C 语言报错翻译器` 或 `c-error-helper` → 点安装。
+
+市场页面：<https://marketplace.visualstudio.com/items?itemName=xiaogaokunkun.c-error-helper>
+
+命令行等价写法：
+
+```bash
+code --install-extension xiaogaokunkun.c-error-helper
+```
+
+**方式二：手动装 .vsix（离线 / 单位网络连不上市集时）**
 
 1. 下载：[`c-error-helper-0.1.0.vsix`](https://github.com/xiaogaokunkun/c-error-helper/releases/download/v0.1.0/c-error-helper-0.1.0.vsix)（Release 页：[v0.1.0](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.0)）
 2. VS Code 里 `Ctrl+Shift+P` → `Extensions: Install from VSIX...` → 选那个文件
@@ -34,10 +48,6 @@
 ```bash
 code --install-extension c-error-helper-0.1.0.vsix
 ```
-
-**方式二：VS Code 扩展市场**
-
-扩展面板（`Ctrl+Shift+X`）搜 `C 语言报错翻译器` 或 `c-error-helper`，点安装。（刚提交上架，若搜不到就用方式一。）
 
 ## 使用
 
@@ -126,13 +136,13 @@ C beginners lose most of their time to unreadable error messages — English jar
 
 ### Install
 
-Grab the VSIX from the [v0.1.0 release](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.0), then in VS Code run `Extensions: Install from VSIX...` — or:
+From the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=xiaogaokunkun.c-error-helper):
 
 ```bash
-code --install-extension c-error-helper-0.1.0.vsix
+code --install-extension xiaogaokunkun.c-error-helper
 ```
 
-Also on the VS Code Marketplace (search `c-error-helper`) — just submitted.
+Or grab the VSIX from the [v0.1.0 release](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.0) and run `Extensions: Install from VSIX...`.
 
 ### Usage
 
