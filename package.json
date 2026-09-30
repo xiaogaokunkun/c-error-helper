@@ -2,7 +2,7 @@
   "name": "c-error-helper",
   "displayName": "C语言报错翻译器",
   "description": "把 C/C++ 编译报错翻译成中文解释：错在哪、为什么、怎么改、正确写法。纯本地离线，秒解析。",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "xiaogaokunkun",
   "license": "MIT",
   "icon": "icon.png",

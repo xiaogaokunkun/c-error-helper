@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.1 — 2026-09-30
+
+只改了说明文案（扩展功能与规则库无变化）：安装方式改成「扩展市场优先」（`code --install-extension xiaogaokunkun.c-error-helper`），补上市场徽章和条目链接。
+
+- 上架 VS Code 扩展市场：<https://marketplace.visualstudio.com/items?itemName=xiaogaokunkun.c-error-helper>
+
 ## 0.1.0 — 2026-09-29
 
 首个版本。
