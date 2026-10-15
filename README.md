@@ -41,13 +41,13 @@ code --install-extension xiaogaokunkun.c-error-helper
 
 **方式二：手动装 .vsix（离线 / 单位网络连不上市集时）**
 
-1. 下载：[`c-error-helper-0.1.1.vsix`](https://github.com/xiaogaokunkun/c-error-helper/releases/download/v0.1.1/c-error-helper-0.1.1.vsix)（Release 页：[v0.1.1](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.1)）
+1. 下载：[`c-error-helper-0.1.3.vsix`](https://github.com/xiaogaokunkun/c-error-helper/releases/download/v0.1.3/c-error-helper-0.1.3.vsix)（Release 页：[v0.1.3](https://github.com/xiaogaokunkun/c-error-helper/releases/tag/v0.1.3)）
 2. VS Code 里 `Ctrl+Shift+P` → `Extensions: Install from VSIX...` → 选那个文件
 
 命令行等价写法：
 
 ```bash
-code --install-extension c-error-helper-0.1.1.vsix
+code --install-extension c-error-helper-0.1.3.vsix
 ```
 
 ## 使用
