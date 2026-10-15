@@ -23,6 +23,7 @@
 - 🔒 **离线可用**：教室 / 图书馆没网也能用，代码不发往任何云端
 - 🎯 **新手陷阱库**：**36 条规则**，全角标点、整数除法、`if` 里把 `==` 写成 `=`、`scanf` 漏 `&`、`for` 里分号写成逗号…… 每条都是真踩过的坑
 - 🖱️ **不打断心流**：原生 hover + `Ctrl+.` 快速修复，不用切面板、不用碰鼠标
+- 🔍 **解释面板可缩放**：`Ctrl+.` 打开的面板支持 `A−` / `A+` / `重置` 和 `Ctrl+滚轮`（60%–250%），档位会记住；配色跟随 VS Code 主题，字号跟随 `editor.fontSize`
 
 ## 安装
 
@@ -74,7 +75,7 @@ code --install-extension c-error-helper-0.1.1.vsix
 
 ![故意漏掉一个分号 → 悬停波浪线出中文解释 → Ctrl+. 打开「学长解释」完整文档](https://raw.githubusercontent.com/xiaogaokunkun/c-error-helper/main/docs/demo.gif)
 
-动图里的三拍：① 第 4 行 `int a = 1` 末尾漏了分号 → ② 第 5 行报 `expected a ';'`，鼠标**悬停红波浪线**，弹出中文解释「上一行末尾漏了分号：真正少分号的是上面那一行」→ ③ 点左侧**灯泡**（或按 `Ctrl+.`）选「📖 学长解释：…」，右侧打开完整讲解文档。
+动图里的三拍：① 第 4 行 `int a = 1` 末尾漏了分号 → ② 第 5 行报 `expected a ';'`，鼠标**悬停红波浪线**，弹出中文解释「上一行末尾漏了分号：真正少分号的是上面那一行」→ ③ 点左侧**灯泡**（或按 `Ctrl+.`）选「📖 学长解释：…」，右侧打开完整讲解面板（可缩放、可一键复制；面板右上角「Markdown」还能切回纯文本版）。
 
 ## 为什么不直接问 ChatGPT
 
@@ -91,8 +92,9 @@ code --install-extension c-error-helper-0.1.1.vsix
 | 项 | 结果 |
 |---|---|
 | 匹配逻辑单测（gcc 原文 + IntelliSense 变体） | 20 / 20 |
-| 扩展 host 冒烟（真 VS Code API：hover / Ctrl+. / 解释文档 / 反例不误报） | 14 / 14 |
-| 真机端到端（cpptools + MinGW64 gcc + 工作区 compilerPath，必须命中 `expected a ';'` → 中文「上一行末尾漏了分号」） | 6 / 6 |
+| 解释面板单测（HTML 结构 / C 代码转义 / CSP / 缩放加减与 60%-250% 边界 / Ctrl+滚轮 / Ctrl+=） | 30 / 30 |
+| 扩展 host 冒烟（真 VS Code API：hover / Ctrl+. / 面板 / 反例不误报） | 16 / 16 |
+| 真机端到端（cpptools + MinGW64 gcc + 工作区 compilerPath，必须命中 `expected a ';'` → 中文「上一行末尾漏了分号」） | 11 / 11 |
 | 规则与网页版逐条核对 | 36 条一致 |
 
 ## 规则库

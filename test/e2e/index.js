@@ -140,6 +140,52 @@ async function run() {
       }
     }
     t('真实文件里 Ctrl+. 也有「学长解释」', !!actTitle, actTitle);
+
+    // 0.1.2 起 hover 是精简版：不能超过 VS Code 的悬停高度上限（实测小窗口 250px / 最大化 317px），
+    // 否则正文被截 + 出滚动条 —— 代码块是最占高度的部分，所以留在 Ctrl+. 的完整讲解里。
+    t(
+      'hover 精简：不含「正确写法」代码块（否则超出悬停高度上限被截断）',
+      hit.length > 0 && !/正确写法/.test(hit) && !/```/.test(hit),
+      hit.replace(/\n/g, ' / ').slice(0, 120)
+    );
+    t('hover 里给了 Ctrl+. 入口', /怎么改/.test(hit) && /Ctrl\+\./.test(hit));
+
+    // 点一下那条 CodeAction 的后果要能读回来。
+    // 0.1.3 起默认打开的是 Webview 面板，而 Webview 的内容扩展 host 读不到（没有 API），
+    // 所以内容用同一个解释的 markdown 版本断言 —— 面板右上角「Markdown」按钮执行的就是它。
+    let explainText = '';
+    let explainThrew = '';
+    for (const d of diags || []) {
+      const acts =
+        (await vscode.commands.executeCommand(
+          'vscode.executeCodeActionProvider',
+          doc.uri,
+          d.range,
+          vscode.CodeActionKind.QuickFix.value
+        )) || [];
+      const a = acts.find((x) => String(x.title || '').includes('学长解释'));
+      if (a && a.command && a.command.command) {
+        const idx = (a.command.arguments || [])[0];
+        try {
+          await vscode.commands.executeCommand(a.command.command, ...(a.command.arguments || []));
+          await sleep(800);
+        } catch (e) {
+          explainThrew = (e && e.message) || String(e);
+        }
+        await vscode.commands.executeCommand('cErrorHelper.explainMarkdown', idx);
+        await sleep(800);
+        const ed = vscode.window.activeTextEditor;
+        explainText = ed ? ed.document.getText() : '';
+        break;
+      }
+    }
+    t('「学长解释」面板能打开且不抛异常', !explainThrew, explainThrew);
+    t(
+      '「学长解释」完整讲解：含「正确写法」+ 代码示例',
+      /正确写法/.test(explainText) && /int a = 1;/.test(explainText),
+      explainText.replace(/\n/g, ' / ').slice(0, 160)
+    );
+    t('完整讲解里同时保留「为什么」正文', /编译器在某个东西前面本来期待一个分号/.test(explainText));
   } catch (e) {
     t('e2e 抛异常: ' + (e && e.message), false, e && e.stack);
   }

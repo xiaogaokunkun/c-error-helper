@@ -25,6 +25,7 @@ async function run() {
 
     const cmds = await vscode.commands.getCommands(true);
     t('命令 cErrorHelper.explain 已注册', cmds.includes('cErrorHelper.explain'));
+    t('命令 cErrorHelper.explainMarkdown 已注册', cmds.includes('cErrorHelper.explainMarkdown'));
 
     const doc = await vscode.workspace.openTextDocument({
       language: 'c',
@@ -63,18 +64,35 @@ async function run() {
     t('Ctrl+. 灯泡给出快速修复', !!act, act ? act.title : '返回 ' + acts.length + ' 条');
     t('快速修复绑定 cErrorHelper.explain', !!(act && act.command && act.command.command === 'cErrorHelper.explain'));
 
-    // ---- 场景 1b：点那条快速修复 → 侧边打开完整解释 ----
+    // ---- 场景 1b：点那条快速修复 → 侧边打开「学长解释」面板 ----
+    // 0.1.3 起默认打开的是 Webview 面板；Webview 的内容扩展 host 读不到（没有 API），
+    // 所以这里分两步验：① 参数是规则下标、命令执行不抛异常；② 内容用同一个解释的 markdown 版本断言
+    // —— 面板右上角那个「Markdown」按钮走的就是 cErrorHelper.explainMarkdown。
+    t(
+      '快速修复的参数是规则下标（数字）',
+      !!(act && act.command && typeof act.command.arguments[0] === 'number'),
+      act && act.command ? JSON.stringify(act.command.arguments) : '无快速修复'
+    );
     if (act && act.command) {
-      await vscode.commands.executeCommand('cErrorHelper.explain', act.command.arguments[0]);
+      const idx = act.command.arguments[0];
+      let threw = '';
+      try {
+        await vscode.commands.executeCommand('cErrorHelper.explain', idx);
+        await new Promise((r) => setTimeout(r, 500));
+      } catch (e) {
+        threw = (e && e.message) || String(e);
+      }
+      t('执行 cErrorHelper.explain 打开面板且不抛异常', !threw, threw);
+
+      await vscode.commands.executeCommand('cErrorHelper.explainMarkdown', idx);
       await new Promise((r) => setTimeout(r, 500));
       const ed = vscode.window.activeTextEditor;
       const edText = ed ? ed.document.getText() : '';
       t(
-        '快速修复在侧边打开解释文档',
-        !!ed && edText.length > 0,
+        '「Markdown」版打开文本标签页',
+        !!ed && ed.document.languageId === 'markdown',
         ed ? ed.document.languageId + ' / ' + edText.split('\n')[0] : '无活动编辑器'
       );
-      t('解释文档是 markdown（Ctrl+Shift+V 可预览）', !!ed && ed.document.languageId === 'markdown');
       t(
         '解释文档含完整中文解释+改法',
         edText.includes('上一行末尾漏了分号') && edText.includes('怎么改'),

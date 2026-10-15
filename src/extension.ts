@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { matchError } from './match';
+import { RULES } from './rules';
+import { buildExplainHtml } from './explainView';
 
 // 规则里存的是 HTML 标签与实体（网页版直接 innerHTML），渲染层再转成 Markdown。
 // 注意顺序：先把真标签处理完，最后才还原实体。
@@ -26,7 +28,13 @@ function toPlain(s: string): string {
     .replace(/`/g, '');
 }
 
-function buildHoverMarkdown(rule: any): string {
+// hover 的高度有硬上限：VS Code 把悬停框压进「视口可用空间」里（本机实测 1456×908 窗口 = 250px、
+// 最大化 2560×1440 = 317px；字号 14px 时正文每行 19px），内容超出就出现滚动条、正文被截掉
+// ——这就是「悬停框太小」的真正成因，而且 VS Code 没给扩展任何设置宽高的 API
+// （editor.hover.* 只有 enabled/delay/sticky/hidingDelay/above/showLongLineWarning）。
+// 所以 hover 只放「标题 + 为什么 + 全部改法」，Ctrl+. 入口折进「怎么改」那行省掉一整行；
+// 实测 36 条规则 132–246px，小窗口（250px 上限）也不滚动。代码块（最占高度）留给完整讲解。
+function buildSections(rule: any, compact = false): string[] {
   const badge = rule.s === 'e' ? '❌ 错误' : (rule.s === 'w' ? '⚠️ 警告' : 'ℹ️ 提示');
   const lines: string[] = [];
   lines.push(`**${htmlToMarkdown(rule.n)}**  ${badge}`);
@@ -36,9 +44,22 @@ function buildHoverMarkdown(rule: any): string {
   }
   if (rule.fix && rule.fix.length) {
     lines.push('');
-    lines.push('**怎么改：**');
+    lines.push(compact ? '**怎么改**（按 `Ctrl+.` 看完整讲解）：' : '**怎么改：**');
     for (const f of rule.fix) lines.push(`- ${htmlToMarkdown(f)}`);
   }
+  return lines;
+}
+
+// 悬停用的精简版：不能超高度上限，否则会被截 + 出滚动条。
+// 布局：标题+徽章 / 为什么 / 「怎么改」（Ctrl+. 的入口折进这行标题里，省下一整行高度）。
+function buildHoverMarkdown(rule: any): string {
+  const lines = buildSections(rule, true);
+  return lines.join('\n');
+}
+
+// Ctrl+. 打开的完整讲解：hover 放不下的代码示例在这里
+function buildExplainMarkdown(rule: any): string {
+  const lines = buildSections(rule);
   if (rule.code) {
     lines.push('');
     lines.push('**正确写法：**');
@@ -50,27 +71,86 @@ function buildHoverMarkdown(rule: any): string {
 }
 
 const CMD_EXPLAIN = 'cErrorHelper.explain';
+/** 同一个解释，改用 markdown 文本标签页打开（Webview 面板右上角那个「Markdown」按钮走这条） */
+const CMD_EXPLAIN_MD = 'cErrorHelper.explainMarkdown';
+/** 缩放档位记住在 globalState 里（全局，跨工作区） */
+const SCALE_KEY = 'cErrorHelper.explainScale';
 
-// 「解释」面板：复用同一个 untitled markdown 文档，避免每点一次就堆一个标签页。
-// 用文档而不是右下角通知条——通知条会把多行解释挤成一条、截断看不全。
-let panel: vscode.TextDocument | undefined;
+// 「学长解释」有两种打开方式：
+//   ① 默认（CMD_EXPLAIN）：Webview 面板 —— HTML/CSS 归我们控制，所以能做 A−/A+/重置 + Ctrl+滚轮 + Ctrl+= 的
+//      缩放，颜色/字号跟随 VS Code 主题与 editor.fontSize；复用同一个面板，避免每点一次堆一个标签页。
+//   ② CMD_EXPLAIN_MD：退回原来的纯文本 markdown 标签页（想 Ctrl+Shift+V 预览、想直接改文本时用）。
+let view: vscode.WebviewPanel | undefined;
+let textDoc: vscode.TextDocument | undefined;
+/** 当前面板里展示的是哪条规则 —— 「Markdown」按钮要用 */
+let currentRuleIndex = -1;
 
-async function showExplain(markdown: string): Promise<void> {
-  if (panel && panel.isClosed) panel = undefined;
-  if (!panel) {
-    panel = await vscode.workspace.openTextDocument({ language: 'markdown', content: markdown });
-    await vscode.window.showTextDocument(panel, {
+function renderExplain(webview: vscode.Webview, rule: any, markdown: string, scale: number): string {
+  const nonce = Array.from({ length: 32 }, () =>
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.floor(Math.random() * 62))
+  ).join('');
+  return buildExplainHtml({ rule, markdown, scale, nonce, cspSource: webview.cspSource });
+}
+
+function clampScale(v: any): number {
+  const n = typeof v === 'number' && isFinite(v) ? v : 1;
+  return Math.min(2.5, Math.max(0.6, n));
+}
+
+async function openExplainMarkdown(ruleIndex: number): Promise<void> {
+  const rule = RULES[ruleIndex];
+  if (!rule) return;
+  const markdown = buildExplainMarkdown(rule);
+  if (textDoc && textDoc.isClosed) textDoc = undefined;
+  if (!textDoc) {
+    textDoc = await vscode.workspace.openTextDocument({ language: 'markdown', content: markdown });
+    await vscode.window.showTextDocument(textDoc, {
       viewColumn: vscode.ViewColumn.Beside,
       preview: true,
     });
     return;
   }
-  const editor = await vscode.window.showTextDocument(panel, {
+  const editor = await vscode.window.showTextDocument(textDoc, {
     viewColumn: vscode.ViewColumn.Beside,
     preview: true,
   });
-  const lastLine = panel.lineCount;
+  const lastLine = textDoc.lineCount;
   await editor.edit((b) => b.replace(new vscode.Range(0, 0, lastLine, 0), markdown));
+}
+
+function showExplain(context: vscode.ExtensionContext, ruleIndex: number): void {
+  const rule = RULES[ruleIndex];
+  if (!rule) return;
+  currentRuleIndex = ruleIndex;
+  const markdown = buildExplainMarkdown(rule);
+  const scale = clampScale(context.globalState.get<number>(SCALE_KEY, 1));
+  const title = '学长解释：' + toPlain(rule.n);
+
+  if (view) {
+    view.title = title;
+    view.webview.html = renderExplain(view.webview, rule, markdown, scale);
+    view.reveal(vscode.ViewColumn.Beside, true);
+    return;
+  }
+
+  view = vscode.window.createWebviewPanel('cErrorHelper.explain', title, vscode.ViewColumn.Beside, {
+    enableScripts: true,
+    retainContextWhenHidden: true,   // 切走再回来不重载，缩放档位与滚动位置都不丢
+  });
+  view.webview.html = renderExplain(view.webview, rule, markdown, scale);
+
+  view.webview.onDidReceiveMessage((msg) => {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'setScale') {
+      void context.globalState.update(SCALE_KEY, clampScale(msg.value));
+    } else if (msg.type === 'openMarkdown') {
+      void openExplainMarkdown(currentRuleIndex);
+    }
+  });
+
+  view.onDidDispose(() => {
+    view = undefined;
+  });
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -134,7 +214,8 @@ export function activate(context: vscode.ExtensionContext) {
           a.command = {
             command: CMD_EXPLAIN,
             title: '解释这条报错',
-            arguments: [buildHoverMarkdown(rule)],
+            // 传规则下标，不传整段文本：命令参数要能跨进程传递，长文本/对象都会被序列化掉。
+            arguments: [RULES.indexOf(rule)],
           };
           actions.push(a);
         }
@@ -143,9 +224,14 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // 点击 QuickFix 后，在侧边打开完整中文解释（可选中复制，Ctrl+Shift+V 还能预览）。
+  // 点快速修复 → 侧边打开 Webview 面板（可缩放、可复制）。
   context.subscriptions.push(
-    vscode.commands.registerCommand(CMD_EXPLAIN, (markdown: string) => showExplain(markdown))
+    vscode.commands.registerCommand(CMD_EXPLAIN, (ruleIndex: number) => showExplain(context, ruleIndex))
+  );
+
+  // 同一个解释的 markdown 文本版（面板右上角「Markdown」按钮；也是真机测试断言内容的入口）
+  context.subscriptions.push(
+    vscode.commands.registerCommand(CMD_EXPLAIN_MD, (ruleIndex: number) => openExplainMarkdown(ruleIndex))
   );
 }
 
