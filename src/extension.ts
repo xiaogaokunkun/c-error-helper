@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { matchError } from './match';
 import { RULES } from './rules';
 import { buildExplainHtml } from './explainView';
+import { pickDiagnostic } from './diagnostics';
+import { createDebounced } from './debounce';
 
 // 规则里存的是 HTML 标签与实体（网页版直接 innerHTML），渲染层再转成 Markdown。
 // 注意顺序：先把真标签处理完，最后才还原实体。
@@ -162,38 +164,44 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   // 核心监听：onDidChangeDiagnostics，仅 c/cpp，防抖 150ms。
-  let timer: NodeJS.Timeout | undefined;
+  // 防抖器自己实现 dispose：deactivate 时 context.subscriptions 会清掉还悬着的 timer。
+  let pendingUris: readonly vscode.Uri[] = [];
+  const diagnosticsDebounce = createDebounced(150, () => {
+    const uris = pendingUris;
+    pendingUris = [];
+    for (const uri of uris) {
+      const doc = vscode.workspace.textDocuments.find(
+        (d) => d.uri.toString() === uri.toString()
+      );
+      if (!doc) continue;
+      if (doc.languageId !== 'c' && doc.languageId !== 'cpp') continue;
+      for (const d of vscode.languages.getDiagnostics(uri)) {
+        resolve(d.message);
+      }
+    }
+  });
   context.subscriptions.push(
+    diagnosticsDebounce,
     vscode.languages.onDidChangeDiagnostics((e) => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = undefined;
-        for (const uri of e.uris) {
-          const doc = vscode.workspace.textDocuments.find(
-            (d) => d.uri.toString() === uri.toString()
-          );
-          if (!doc) continue;
-          if (doc.languageId !== 'c' && doc.languageId !== 'cpp') continue;
-          for (const d of vscode.languages.getDiagnostics(uri)) {
-            resolve(d.message);
-          }
-        }
-      }, 150);
+      pendingUris = e.uris;
+      diagnosticsDebounce.schedule();
     })
   );
 
   // Hover：光标落在诊断范围内时显示中文解释。
+  // 同一位置可能同时有 Error / Warning：按严重度从高到低找第一条能匹配到规则的诊断，
+  // 匹配不到的高严重度诊断（例如没收录的报错）不会挡住后面能解释的那条。
   context.subscriptions.push(
     vscode.languages.registerHoverProvider(['c', 'cpp'], {
       provideHover(document, position) {
-        const diag = vscode.languages
-          .getDiagnostics(document.uri)
-          .find((d) => d.range.contains(position));
-        if (!diag) return null;
-        const rule = resolve(diag.message);
-        if (!rule) return null;
-        const md = new vscode.MarkdownString(buildHoverMarkdown(rule));
-        return new vscode.Hover(md, diag.range);
+        const picked = pickDiagnostic(
+          vscode.languages.getDiagnostics(document.uri),
+          position,
+          (d) => resolve(d.message)
+        );
+        if (!picked) return null;
+        const md = new vscode.MarkdownString(buildHoverMarkdown(picked.rule));
+        return new vscode.Hover(md, picked.diagnostic.range);
       },
     })
   );
@@ -224,14 +232,36 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // 从命令面板直接调用时没有 ruleIndex：给一句提示，别让用户以为命令坏了。
+  // （正常入口是代码旁边的灯泡 Ctrl+.，那里会带上规则下标。）
+  const isRuleIndex = (v: any): v is number =>
+    typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < RULES.length;
+  const showPaletteHint = (): void => {
+    void vscode.window.showInformationMessage(
+      '请把光标放到报错处，点灯泡（Ctrl+.）选择「学长解释」。'
+    );
+  };
+
   // 点快速修复 → 侧边打开 Webview 面板（可缩放、可复制）。
   context.subscriptions.push(
-    vscode.commands.registerCommand(CMD_EXPLAIN, (ruleIndex: number) => showExplain(context, ruleIndex))
+    vscode.commands.registerCommand(CMD_EXPLAIN, (ruleIndex?: number) => {
+      if (!isRuleIndex(ruleIndex)) {
+        showPaletteHint();
+        return;
+      }
+      showExplain(context, ruleIndex);
+    })
   );
 
   // 同一个解释的 markdown 文本版（面板右上角「Markdown」按钮；也是真机测试断言内容的入口）
   context.subscriptions.push(
-    vscode.commands.registerCommand(CMD_EXPLAIN_MD, (ruleIndex: number) => openExplainMarkdown(ruleIndex))
+    vscode.commands.registerCommand(CMD_EXPLAIN_MD, (ruleIndex?: number) => {
+      if (!isRuleIndex(ruleIndex)) {
+        showPaletteHint();
+        return;
+      }
+      void openExplainMarkdown(ruleIndex);
+    })
   );
 }
 

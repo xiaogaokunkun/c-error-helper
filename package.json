@@ -45,7 +45,18 @@
     "onLanguage:c",
     "onLanguage:cpp"
   ],
-  "contributes": {},
+  "contributes": {
+    "commands": [
+      {
+        "command": "cErrorHelper.explain",
+        "title": "学长解释：解释当前报错"
+      },
+      {
+        "command": "cErrorHelper.explainMarkdown",
+        "title": "学长解释：用 Markdown 打开"
+      }
+    ]
+  },
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": true
