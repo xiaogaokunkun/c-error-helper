@@ -12,3 +12,4 @@ out/**/*.map
 **/*.ts
 tsconfig.json
 package-lock.json
+OPTIMIZE-REPORT.md
